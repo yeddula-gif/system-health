@@ -1,0 +1,71 @@
+import psutil
+import logging
+from collections import Counter
+
+# Configure logging for system health
+logging.basicConfig(filename="system_health.log", level=logging.INFO, format="%(asctime)s - %(message)s")
+
+# Thresholds
+CPU_THRESHOLD = 80  # Percentage
+MEMORY_THRESHOLD = 80  # Percentage
+DISK_THRESHOLD = 80  # Percentage
+
+def monitor_system():
+    # Check CPU usage
+    cpu_usage = psutil.cpu_percent(interval=1)
+    if cpu_usage > CPU_THRESHOLD:
+        logging.warning(f"High CPU usage detected: {cpu_usage}%")
+    
+    # Check memory usage
+    memory_info = psutil.virtual_memory()
+    if memory_info.percent > MEMORY_THRESHOLD:
+        logging.warning(f"High memory usage detected: {memory_info.percent}%")
+    
+    # Check disk usage
+    disk_info = psutil.disk_usage('/')
+    if disk_info.percent > DISK_THRESHOLD:
+        logging.warning(f"High disk usage detected: {disk_info.percent}%")
+    
+    # Log running processes
+    processes = [proc.info for proc in psutil.process_iter(['pid', 'name'])]
+    logging.info(f"Running processes: {processes}")
+
+if __name__ == "__main__":  # Corrected conditional
+    monitor_system()
+    print("System health monitoring complete. Check system_health.log for details.")
+
+
+def analyze_logs(log_file):
+    try:
+        with open(log_file, 'r') as file:
+            logs = file.readlines()
+        
+        # Extract relevant data
+        status_codes = []
+        requested_pages = []
+        ip_addresses = []
+        
+        for log in logs:
+            parts = log.split()
+            if len(parts) > 8:  # Ensure the log line has enough parts
+                ip_addresses.append(parts[0])
+                requested_pages.append(parts[6])
+                status_codes.append(parts[8])
+        
+        # Analyze patterns
+        most_common_ip = Counter(ip_addresses).most_common(1)
+        most_requested_page = Counter(requested_pages).most_common(1)
+        error_404_count = status_codes.count('404')
+        
+        # Output report
+        print(f"Most common IP address: {most_common_ip}")
+        print(f"Most requested page: {most_requested_page}")
+        print(f"Number of 404 errors: {error_404_count}")
+    
+    except FileNotFoundError:
+        print(f"Error: Log file '{log_file}' not found.")
+
+if __name__ == "__main__":  # Corrected conditional
+    log_file_path = "webserver.log"  # Replace with your log file path
+    analyze_logs(log_file_path)
+
